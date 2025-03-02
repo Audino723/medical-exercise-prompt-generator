@@ -1,7 +1,10 @@
 from src.agents.base_llm_model import BaseLLMModel
 from typing import Dict
 
-class RolePlayingPromptCreator(BaseLLMModel):
+class RolePlayingPromptCreator():
+    def __init__(self, model : BaseLLMModel):
+        self.model = model
+
     def generate_prompt(self, extracted_data: Dict[str, str], case_scenarios: Dict, character_name: str, teaching_level: str) -> str:
         """Constructs a RoleLLM-style system prompt for an interactive learning experience."""
         prompt = f"""
@@ -15,30 +18,36 @@ class RolePlayingPromptCreator(BaseLLMModel):
         - Adjust explanations based on the student’s performance.  
         
         **Case Scenario:**  
-        {extracted_data['context']}  
-        
-        **Question:**  
-        {extracted_data['question']}  
+        {extracted_data}
         
         **Student Actions & Feedback:**  
         """
         
-        for key, value in case_scenarios['actions'].items():
-            response = value['response']
-            correctness = value['correctness']
-            explanation = value['explanation']
+        for id, scenario in case_scenarios.items():
+            context = scenario['context']
+            question = scenario['question']
+
             prompt += f"""
-            (Option {key}): {response}  
-            - **Correctness:** {correctness}  
-            - **Tutor Response:** {explanation}  
+            {id}. {context}
+            **Question:** {question}  
             """
+
+            for key, value in scenario['actions'].items():
+                response = value['response']
+                correctness = value['correctness']
+                explanation = value['explanation']
+                prompt += f"""
+                (Option {key}): {response}  
+                - **Correctness:** {correctness}  
+                - **Tutor Response:** {explanation}  
+                """
         
         return prompt
     
     def generate_role_playing_prompt(self, extracted_data: Dict[str, str], case_scenarios: Dict, character_name: str, teaching_level: str) -> str:
         """Uses LLM to generate a complete role-playing prompt for interactive learning."""
         prompt = self.generate_prompt(extracted_data, case_scenarios, character_name, teaching_level)
-        return self.generate_completion(prompt)
+        return prompt
     
 if __name__ == "__main__":
     extracted_data = {
